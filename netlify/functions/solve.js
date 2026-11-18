@@ -16,22 +16,25 @@ exports.handler = async (event) => {
       .replace(/\s+/g, " ")
       .slice(0, 12000);
 
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-5-5",
-        max_tokens: 600,
-        system: "Bạn là gia sư. Tìm đề bài trong nội dung trang, giải từng bước, ngắn gọn, bằng tiếng Việt.",
-        messages: [{ role: "user", content: text }]
-      })
-    });
+    const r = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-goog-api-key": process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "Bạn là gia sư. Tìm đề bài trong nội dung trang, giải từng bước, ngắn gọn, bằng tiếng Việt." }]
+          },
+          contents: [{ parts: [{ text }] }]
+        })
+      }
+    );
     const d = await r.json();
-    return reply(d.content ? d.content[0].text : JSON.stringify(d));
+    const out = d.candidates && d.candidates[0].content.parts[0].text;
+    return reply(out || JSON.stringify(d));
   } catch (e) {
     return reply("Lỗi: " + e.message);
   }
