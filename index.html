@@ -1,38 +1,34 @@
-exports.handler = async (event) => {
-  const reply = (answer) => ({
-    statusCode: 200,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ answer })
-  });
-
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bot giải bài tập</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:0 auto;padding:16px;background:#f5f7fa}
+input,button{width:100%;box-sizing:border-box;font:inherit;padding:10px;margin:6px 0;border:1px solid #bbb;border-radius:8px}
+button{background:#1f6feb;color:#fff;border:0}
+#out{white-space:pre-wrap;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;min-height:80px;line-height:1.5}
+</style>
+</head>
+<body>
+<h2>Bot giải bài tập</h2>
+<input id="u" placeholder="Dán link bài tập vào đây...">
+<button id="go">Giải bài</button>
+<div id="out">Kết quả sẽ hiện ở đây.</div>
+<script>
+go.onclick = async () => {
+  out.textContent = "Đang đọc link và giải...";
   try {
-    const { url } = JSON.parse(event.body || "{}");
-    if (!url) return reply("Hãy dán link bài tập.");
-
-    const html = await (await fetch(url)).text();
-    const text = html
-      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .slice(0, 12000);
-
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("/.netlify/functions/solve", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-5-5",
-        max_tokens: 600,
-        system: "Bạn là gia sư. Tìm đề bài trong nội dung trang, giải từng bước, ngắn gọn, bằng tiếng Việt.",
-        messages: [{ role: "user", content: text }]
-      })
+      body: JSON.stringify({ url: u.value.trim() })
     });
-    const d = await r.json();
-    return reply(d.content ? d.content[0].text : JSON.stringify(d));
+    out.textContent = (await r.json()).answer;
   } catch (e) {
-    return reply("Lỗi: " + e.message);
+    out.textContent = "Lỗi: " + e.message;
   }
 };
+</script>
+</body>
+</html>
